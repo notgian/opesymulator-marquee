@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <functional>
 #include <conio.h>
+#include <windows.h>
 #include "Screen.h"
 #include "MarqueeText.h"
 #include "Component.h"
@@ -84,6 +85,10 @@ CommandStatus cmd_dispatch(const string& command) {
     return CommandStatus::UnknownCommand;
 }
 
+// Helper to full clear built-in terminal screen (not our emulator screen)
+void clearScreen() {
+    std::cout << "\033[2J\033[H";
+}
 
 
 int main (int argc, char *argv[]) {
@@ -126,10 +131,12 @@ int main (int argc, char *argv[]) {
     MarqueeTextComponent.start();
 
     string currentTextInput = "";
+
+    clearScreen();
     while (running) {
         if (_kbhit()) {
             int intercepted = _getch();
-            // process key
+            // process the intercepted key
         }
 
         if (MarqueeTextComponent.isRunning())
