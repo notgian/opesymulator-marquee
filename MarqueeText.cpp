@@ -1,14 +1,20 @@
 #include "MarqueeText.h"
 #include <algorithm>
+#include <sstream>
 
-MarqueeText::MarqueeText(int row, int col, int width, int height, const std::string& marqueeText, int speedMs)
-    : Component(row, col, width, height),
+MarqueeText::MarqueeText(int boundsRow, int boundsCol, int boundsWidth, int boundsHeight, const std::string& marqueeText, int speedMs)
+    : Component(boundsRow, boundsCol, 0, 0),
       marqueeText_(marqueeText),
-      scrollOffset_(0),
+      boundsRow_(boundsRow),
+      boundsCol_(boundsCol),
+      boundsWidth_(std::max(0, boundsWidth)),
+      boundsHeight_(std::max(0, boundsHeight)),
+      directionX_(1),
+      directionY_(1),
       speedMs_(std::max(1, speedMs)),
       running_(false),
       lastStepTime_(Clock::now()) {
-    rebuildFrame();
+    rebuildText();
 }
 
 void MarqueeText::start() {
@@ -28,8 +34,7 @@ bool MarqueeText::isRunning() const {
 
 void MarqueeText::setMarqueeText(const std::string& marqueeText) {
     marqueeText_ = marqueeText;
-    scrollOffset_ = 0;
-    rebuildFrame();
+    rebuildText();
 }
 
 std::string MarqueeText::getMarqueeText() const {
@@ -44,11 +49,32 @@ int MarqueeText::getSpeed() const {
     return speedMs_;
 }
 
+void MarqueeText::setBounds(int boundsRow, int boundsCol, int boundsWidth, int boundsHeight) {
+    boundsRow_ = boundsRow;
+    boundsCol_ = boundsCol;
+    boundsWidth_ = std::max(0, boundsWidth);
+    boundsHeight_ = std::max(0, boundsHeight);
+    clampIntoBounds();
+}
+
+int MarqueeText::getBoundsRow() const {
+    return boundsRow_;
+}
+
+int MarqueeText::getBoundsCol() const {
+    return boundsCol_;
+}
+
+int MarqueeText::getBoundsWidth() const {
+    return boundsWidth_;
+}
+
+int MarqueeText::getBoundsHeight() const {
+    return boundsHeight_;
+}
+
 bool MarqueeText::update() {
     if (!running_) return false;
-
-    size_t trackLength = getTrackLength();
-    if (trackLength == 0) return false;
 
     Clock::time_point now = Clock::now();
     long long elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastStepTime_).count();
@@ -56,28 +82,60 @@ bool MarqueeText::update() {
 
     long long stepsToTake = elapsedMs / speedMs_;
     lastStepTime_ += std::chrono::milliseconds(stepsToTake * speedMs_);
-    scrollOffset_ = (scrollOffset_ + stepsToTake) % trackLength;
 
-    rebuildFrame();
+    for (long long step = 0; step < stepsToTake; ++step) {
+        moveOneStep();
+    }
     return true;
 }
 
-void MarqueeText::rebuildFrame() {
-    int safeWidth = std::max(0, width_);
-    int safeHeight = std::max(0, height_);
+void MarqueeText::rebuildText() {
+    std::vector<std::string> lines;
+    std::stringstream textStream(marqueeText_);
+    std::string line;
 
-    text_.assign(safeHeight, std::string(safeWidth, ' '));
-    if (safeWidth == 0 || safeHeight == 0) return;
-
-    std::string track = std::string(safeWidth, ' ') + marqueeText_;
-    size_t trackLength = track.size();
-    int marqueeRow = safeHeight / 2;
-
-    for (int column = 0; column < safeWidth; ++column) {
-        text_[marqueeRow][column] = track[(scrollOffset_ + column) % trackLength];
+    while (std::getline(textStream, line)) {
+        lines.push_back(line);
     }
+    if (lines.empty()) lines.push_back("");
+
+    size_t longestLine = 0;
+    for (const std::string& textLine : lines) {
+        longestLine = std::max(longestLine, textLine.size());
+    }
+    for (std::string& textLine : lines) {
+        textLine.resize(longestLine, ' ');
+    }
+
+    text_ = lines;
+    width_ = static_cast<int>(longestLine);
+    height_ = static_cast<int>(lines.size());
+    clampIntoBounds();
 }
 
-size_t MarqueeText::getTrackLength() const {
-    return static_cast<size_t>(std::max(0, width_)) + marqueeText_.size();
+void MarqueeText::clampIntoBounds() {
+    int maxX = std::max(boundsCol_, boundsCol_ + boundsWidth_ - width_);
+    int maxY = std::max(boundsRow_, boundsRow_ + boundsHeight_ - height_);
+
+    x_ = std::clamp(x_, boundsCol_, maxX);
+    y_ = std::clamp(y_, boundsRow_, maxY);
+}
+
+void MarqueeText::moveOneStep() {
+    int maxX = boundsCol_ + boundsWidth_ - width_;
+    int maxY = boundsRow_ + boundsHeight_ - height_;
+
+    if (maxX > boundsCol_) {
+        if (x_ + directionX_ < boundsCol_ || x_ + directionX_ > maxX) directionX_ = -directionX_;
+        x_ += directionX_;
+    } else {
+        x_ = boundsCol_;
+    }
+
+    if (maxY > boundsRow_) {
+        if (y_ + directionY_ < boundsRow_ || y_ + directionY_ > maxY) directionY_ = -directionY_;
+        y_ += directionY_;
+    } else {
+        y_ = boundsRow_;
+    }
 }

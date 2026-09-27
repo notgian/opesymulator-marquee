@@ -6,7 +6,7 @@
 
 class MarqueeText : public Component {
     public:
-        MarqueeText(int row, int col, int width, int height, const std::string& marqueeText = "", int speedMs = 100);
+        MarqueeText(int boundsRow, int boundsCol, int boundsWidth, int boundsHeight, const std::string& marqueeText = "", int speedMs = 100);
 
         void start();
         void stop();
@@ -18,16 +18,28 @@ class MarqueeText : public Component {
         void setSpeed(int speedMs);
         int getSpeed() const;
 
+        void setBounds(int boundsRow, int boundsCol, int boundsWidth, int boundsHeight);
+        int getBoundsRow() const;
+        int getBoundsCol() const;
+        int getBoundsWidth() const;
+        int getBoundsHeight() const;
+
         bool update();
-        void rebuildFrame();
 
     private:
         using Clock = std::chrono::steady_clock;
 
-        size_t getTrackLength() const;
+        void rebuildText();
+        void clampIntoBounds();
+        void moveOneStep();
 
         std::string marqueeText_;
-        size_t scrollOffset_;
+        int boundsRow_;
+        int boundsCol_;
+        int boundsWidth_;
+        int boundsHeight_;
+        int directionX_;
+        int directionY_;
         int speedMs_;
         bool running_;
         Clock::time_point lastStepTime_;
