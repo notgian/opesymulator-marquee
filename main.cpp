@@ -26,19 +26,6 @@ void print_welcome(ConsoleScreen &console) {
     console.print("CSOPESY Emulator");
     console.print("Agsalon - Ercia - Garcia - Ortha");
     console.print("");
-
-
-    // cout << endl << endl;
-
-    // cout << "   ____  ____  _____________  ____  _____  ____    ___  __________  ____ \n"
-    //     << "  / __ \\/ __ \\/ ____/ ___/\\ \\/ /  |/  / / / / /   /   |/_  __/ __ \\/ __ \\\n"
-    //     << " / / / / /_/ / __/  \\__ \\  \\  / /|_/ / / / / /   / /| | / / / / / / /_/ /\n"
-    //     << "/ /_/ / ____/ /___ ___/ /  / / /  / / /_/ / /___/ ___ |/ / / /_/ / _, _/ \n"
-    //     << "\\____/_/   /_____//____/  /_/_/  /_/\\____/_____/_/  |_/_/  \\____/_/ |_|  \n" << endl;
-
-    // cout << endl << "Welcome" << endl << "CSOPESY Emulator" << endl;
-    // cout << "Agsalon - Ercia - Garcia - Ortha" << endl;
-    // cout << endl;
 }
 
 // Splits "set_speed 200" into {"set_speed", "200"}. args_ is left empty
@@ -129,7 +116,6 @@ void clearScreen() {
 
 
 int main (int argc, char *argv[]) {
-    int refreshRate = 60;
     int screenWidth = 100;
     int screenHeight = 25;
 
@@ -137,9 +123,7 @@ int main (int argc, char *argv[]) {
 
     Screen MainScreen = Screen(screenWidth, screenHeight);
 
-    MarqueeText MarqueeTextComponent = MarqueeText(0, 0, screenWidth, screenHeight);
-    MarqueeTextComponent.setMarqueeText("Hello World");
-    MarqueeTextComponent.start();
+    MarqueeText MarqueeTextComponent = MarqueeText(0, 0, screenWidth, screenHeight, "Hello World");
 
     ConsoleScreen Console(0, 0, screenWidth, screenHeight, "Command> ");
     // Console.print("Welcome to CSOPESY!");
@@ -178,12 +162,15 @@ int main (int argc, char *argv[]) {
                     break;
             }
         }
-
-        if (MarqueeTextComponent.isRunning())
-            MarqueeTextComponent.update();
-
+        
+        // Update components and screen
         MainScreen.update(Console);
+        if (MarqueeTextComponent.isRunning()) {
+            MarqueeTextComponent.update();
+            MainScreen.update(MarqueeTextComponent);
+        }
 
+        // Redraw screen
         MainScreen.draw();
         MainScreen.clearBuffer();
 
