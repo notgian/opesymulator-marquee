@@ -24,6 +24,9 @@ class MarqueeText : public Component {
         int getBoundsWidth() const;
         int getBoundsHeight() const;
 
+        using Component::getText;
+        std::string getText() const;
+
         bool update();
 
     private:

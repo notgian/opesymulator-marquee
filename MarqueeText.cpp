@@ -3,7 +3,7 @@
 #include <sstream>
 
 MarqueeText::MarqueeText(int boundsRow, int boundsCol, int boundsWidth, int boundsHeight, const std::string& marqueeText, int speedMs)
-    : Component(boundsRow, boundsCol, 0, 0),
+    : Component(0, 0, 0, 0),
       marqueeText_(marqueeText),
       boundsRow_(boundsRow),
       boundsCol_(boundsCol),
@@ -39,6 +39,10 @@ void MarqueeText::setMarqueeText(const std::string& marqueeText) {
 
 std::string MarqueeText::getMarqueeText() const {
     return marqueeText_;
+}
+
+std::string MarqueeText::getText() const {
+    return MarqueeText::getMarqueeText();
 }
 
 void MarqueeText::setSpeed(int speedMs) {
@@ -117,8 +121,8 @@ void MarqueeText::clampIntoBounds() {
     int maxX = std::max(boundsCol_, boundsCol_ + boundsWidth_ - width_);
     int maxY = std::max(boundsRow_, boundsRow_ + boundsHeight_ - height_);
 
-    x_ = std::clamp(x_, boundsCol_, maxX);
-    y_ = std::clamp(y_, boundsRow_, maxY);
+    x_ = std::max(boundsCol_, std::min(x_, maxX));
+    y_ = std::max(boundsRow_, std::min(y_, maxY));
 }
 
 void MarqueeText::moveOneStep() {

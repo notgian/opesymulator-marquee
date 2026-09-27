@@ -2,6 +2,10 @@
 #include <string>
 #include <unordered_map>
 #include <functional>
+#include <conio.h>
+#include "Screen.h"
+#include "MarqueeText.h"
+#include "Component.h"
 
 // to make our lives easier
 using std::cout;
@@ -85,50 +89,80 @@ CommandStatus cmd_dispatch(const string& command) {
 int main (int argc, char *argv[]) {
     print_welcome();
 
-    bool running = true;
     int refreshRate = 60;
+    int screenWidth = 100;
+    int screenHeight = 25;
+
+    bool running = true;
+
     string cmdText = "Command";
 
+    // while (running) {
+    //     cout << cmdText << "> ";
+
+    //     string inputCommand;
+    //     if (!getline(cin, inputCommand)) break;
+    //     cout << endl;
+
+    //     CommandStatus status = cmd_dispatch(inputCommand);
+    //     switch (status) {
+    //         case CommandStatus::UnknownCommand:
+    //             cout << "Command not found: " << inputCommand << endl;
+    //             break;
+    //         case CommandStatus::ExitRequest:
+    //             cout << "EXIT signal received" << endl;
+    //             cout << "bye bye" << endl;
+    //             running = false;
+    //             break;
+    //         // Success. Do nothing (for now)
+    //         case CommandStatus::Success:
+    //             break;
+    //     }
+    // }
+
+    Screen MainScreen = Screen(screenWidth, screenHeight);
+    MarqueeText MarqueeTextComponent = MarqueeText(0, 0, screenWidth, screenHeight);
+    MarqueeTextComponent.setMarqueeText("Hello World");
+    MarqueeTextComponent.start();
+
+    string currentTextInput = "";
     while (running) {
-        cout << cmdText << "> ";
-
-        string inputCommand;
-        if (!getline(cin, inputCommand)) break;
-        cout << endl;
-
-        CommandStatus status = cmd_dispatch(inputCommand);
-        switch (status) {
-            case CommandStatus::UnknownCommand:
-                cout << "Command not found: " << inputCommand << endl;
-                break;
-            case CommandStatus::ExitRequest:
-                cout << "EXIT signal received" << endl;
-                cout << "bye bye" << endl;
-                running = false;
-                break;
-            // Success. Do nothing (for now)
-            case CommandStatus::Success:
-                break;
+        if (_kbhit()) {
+            int intercepted = _getch();
+            // process key
         }
 
+        if (MarqueeTextComponent.isRunning())
+            MarqueeTextComponent.update();
 
-        // NOTES on restructured pseudocode for main func:
-        //
-        //  Init Screen
-        //  Init Marquee
-        //  Init Console
-        //
-        // loop while running:
-        //  if kbhit: getch the char
-        //  intermediate step:
-        //  - process the key; ensure valid (A-Za-z0-9 and delete and enter keys)
-        //  - keep track of what has been cumulatively typed
-        //  if enter:
-        //  - send to command interpreter;
-        //  if kbhit: update console component
-        //  if marquee visible: if update marquee component
-        //  Update screen for each component
+        MainScreen.update(MarqueeTextComponent);
+        MainScreen.draw();
+        MainScreen.clearBuffer();
     }
+
+    /*
+        NOTES on restructured pseudocode for main func:
+
+        Init Screen
+        Init Marquee
+        Init Console
+
+        loop while running:
+            if kbhit: getch the char
+            intermediate step:
+                process the key; ensure valid (A-Za-z0-9 and delete and enter keys)
+                keep track of what has been cumulatively typed
+            if enter:
+                send to command interpreter;
+            if kbhit:
+                update console component
+            if marquee visible: 
+                if update marquee component
+            Update screen for each component
+            Sleep
+    */
+
+    
     
     return 0;
 }
