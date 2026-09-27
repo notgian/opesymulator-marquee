@@ -44,11 +44,20 @@ void Screen::update(const Component& component) {
 
 // Does not update the buffer; Only draws to stdout
 void Screen::draw() const {
-    std::cout << "\033[H";
+    std::string renderedDisplay;
+    
+    // Optional performance boost: reserve memory up-front if screenBuffer_ is not empty
+    if (!screenBuffer_.empty()) {
+        renderedDisplay.reserve(screenBuffer_.size() * (screenBuffer_[0].size() + 10));
+    }
+    
+    renderedDisplay += "\033[H";
 
-    for (const auto& row: screenBuffer_) {
-        std::cout << row << "\n";
+    for (const auto& row : screenBuffer_) {
+        // Appends the row content, clears residual characters to the end of the line, and adds a newline
+        renderedDisplay += row;
+        renderedDisplay += "\033[K\n";
     }
 
-    std::cout.flush();
+    std::cout << renderedDisplay << std::flush;
 }
