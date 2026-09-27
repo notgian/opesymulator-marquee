@@ -7,6 +7,7 @@
 #include "Screen.h"
 #include "MarqueeText.h"
 #include "Component.h"
+#include "ConsoleScreen.h"
 
 // to make our lives easier
 using std::cout;
@@ -28,61 +29,85 @@ void print_welcome() {
     cout << endl;
 }
 
-enum class CommandStatus {
-    Success =  0,
-    ExitRequest = 1,
-    UnknownCommand = -1,
-};
+// Splits "set_speed 200" into {"set_speed", "200"}. args_ is left empty
+// when there's no second token.
+static void splitCommand(const string& commandLine, string& name, string& args) {
+    size_t spacePos = commandLine.find(' ');
+    if (spacePos == string::npos) {
+        name = commandLine;
+        args = "";
+    } else {
+        name = commandLine.substr(0, spacePos);
+        args = commandLine.substr(spacePos + 1);
+    }
+}
 
 /**
- * Acts as a dispatcher for each command call
+ * Command interpreter: takes one line of raw input, acts on the
+ * MarqueeText/ConsoleScreen components as needed, and returns the
+ * lines that should be echoed back plus whether "exit" was requested.
  *
- * TODO: this will likely be replaced by something more structured
- *
- *
- * Quick guide on the return codes:
- *
+ * This is intentionally the only place that knows both what a command
+ * means AND which components exist -- ConsoleScreen just displays
+ * whatever CommandResult::output it's handed.
  */
-CommandStatus cmd_dispatch(const string& command) {
-    static const std::unordered_map<std::string, std::function<CommandStatus()>> handlers = {
-        {"initialize", []() {
-            cout << "'initialize' command recognized. Doing something." << endl;
-            return CommandStatus::Success;
+CommandResult cmd_dispatch(const string& commandLine, MarqueeText& marquee, ConsoleScreen& console) {
+    string name, args;
+    splitCommand(commandLine, name, args);
+
+    static const std::unordered_map<std::string, std::function<CommandResult(const string&)>> handlers = {
+        {"help", [](const string&) {
+            return CommandResult{{
+                "Available commands:",
+                "  help                 - displays this list",
+                "  start_marquee        - starts the marquee animation",
+                "  stop_marquee         - stops the marquee animation",
+                "  set_text <text>      - sets the marquee text",
+                "  set_speed <ms>       - sets the marquee refresh rate in milliseconds",
+                "  clear                - clears the console history",
+                "  exit                 - terminates the console",
+            }};
         }},
-        {"screen", []() {
-            cout << "'screen' command recognized. Doing something." << endl;
-            return CommandStatus::Success;
+        {"start_marquee", [&marquee](const string&) {
+            marquee.start();
+            return CommandResult{{"Marquee started."}};
         }},
-        {"scheduler-start", []() {
-            cout << "'scheduler-start' command recognized. Doing something." << endl;
-            return CommandStatus::Success;
+        {"stop_marquee", [&marquee](const string&) {
+            marquee.stop();
+            return CommandResult{{"Marquee stopped."}};
         }},
-        {"scheduler-stop", []() {
-            cout << "'scheduler-stop' command recognized. Doing something." << endl;
-            return CommandStatus::Success;
+        {"set_text", [&marquee](const string& text) {
+            if (text.empty()) return CommandResult{{"Usage: set_text <text>"}};
+            marquee.setMarqueeText(text);
+            return CommandResult{{"Marquee text set to: " + text}};
         }},
-        {"report-util", []() {
-            cout << "'report-util' command recognized. Doing something." << endl;
-            return CommandStatus::Success;
+        {"set_speed", [&marquee](const string& text) {
+            try {
+                int speedMs = std::stoi(text);
+                marquee.setSpeed(speedMs);
+                return CommandResult{{"Marquee speed set to " + std::to_string(speedMs) + "ms."}};
+            } catch (...) {
+                return CommandResult{{"Usage: set_speed <milliseconds>"}};
+            }
         }},
-        {"clear", []() { 
-            cout << "\033[2J\033[3J\033[H";
-            print_welcome();
-            return CommandStatus::Success; 
+        {"clear", [&console](const string&) {
+            console.clearHistory();
+            return CommandResult{}; // history is already wiped; nothing left to echo
         }},
-        {"exit", []() { return CommandStatus::ExitRequest; }},
-        {"help", []() { 
-            // TODO: Implement help display
-            return CommandStatus::Success; 
+        {"exit", [](const string&) {
+            CommandResult result;
+            result.output = {"bye bye"};
+            result.exitRequested = true;
+            return result;
         }},
     };
 
-    auto it = handlers.find(command);
+    auto it = handlers.find(name);
     if (it != handlers.end()) {
-        return it->second(); // Execute handler
+        return it->second(args);
     }
 
-    return CommandStatus::UnknownCommand;
+    return CommandResult{{"Command not found: " + commandLine}};
 }
 
 // Helper to full clear built-in terminal screen (not our emulator screen)
@@ -100,76 +125,64 @@ int main (int argc, char *argv[]) {
 
     bool running = true;
 
-    string cmdText = "Command";
-
-    // while (running) {
-    //     cout << cmdText << "> ";
-
-    //     string inputCommand;
-    //     if (!getline(cin, inputCommand)) break;
-    //     cout << endl;
-
-    //     CommandStatus status = cmd_dispatch(inputCommand);
-    //     switch (status) {
-    //         case CommandStatus::UnknownCommand:
-    //             cout << "Command not found: " << inputCommand << endl;
-    //             break;
-    //         case CommandStatus::ExitRequest:
-    //             cout << "EXIT signal received" << endl;
-    //             cout << "bye bye" << endl;
-    //             running = false;
-    //             break;
-    //         // Success. Do nothing (for now)
-    //         case CommandStatus::Success:
-    //             break;
-    //     }
-    // }
+    // Reserve the top part of the screen for the marquee and the bottom
+    // few rows for the console, so the two components never overlap.
+    int consoleHeight = 8;
+    int marqueeHeight = screenHeight - consoleHeight;
 
     Screen MainScreen = Screen(screenWidth, screenHeight);
-    MarqueeText MarqueeTextComponent = MarqueeText(0, 0, screenWidth, screenHeight);
+
+    MarqueeText MarqueeTextComponent = MarqueeText(0, 0, screenWidth, marqueeHeight);
     MarqueeTextComponent.setMarqueeText("Hello World");
     MarqueeTextComponent.start();
 
-    string currentTextInput = "";
+    ConsoleScreen Console(marqueeHeight, 0, screenWidth, consoleHeight, "Command> ");
+    Console.print("Welcome to CSOPESY!");
+    Console.print("Type 'help' to see the available commands.");
+
+    // The console only knows how to display text; cmd_dispatch is what
+    // actually understands "start_marquee" etc., so it's the one wired
+    // in here as the command handler.
+    Console.setCommandHandler([&MarqueeTextComponent, &Console](const string& commandText) {
+        return cmd_dispatch(commandText, MarqueeTextComponent, Console);
+    });
 
     clearScreen();
     while (running) {
         if (_kbhit()) {
             int intercepted = _getch();
-            // process the intercepted key
+
+            switch (intercepted) {
+                case '\r': // Enter
+                    Console.handleEnter();
+                    if (Console.consumeExitRequested()) {
+                        running = false;
+                    }
+                    break;
+                case '\b': // Backspace
+                case 127:  // Some terminals send DEL instead
+                    Console.handleBackspace();
+                    break;
+                default:
+                    // Only accept printable characters; ignore arrow keys,
+                    // function keys, and other non-text input for now.
+                    if (intercepted >= 32 && intercepted < 127) {
+                        Console.handleKeyPress(static_cast<char>(intercepted));
+                    }
+                    break;
+            }
         }
 
         if (MarqueeTextComponent.isRunning())
             MarqueeTextComponent.update();
 
         MainScreen.update(MarqueeTextComponent);
+        MainScreen.update(Console);
         MainScreen.draw();
         MainScreen.clearBuffer();
+
+        Sleep(1); // yield briefly so the loop doesn't spin the CPU at 100%
     }
 
-    /*
-        NOTES on restructured pseudocode for main func:
-
-        Init Screen
-        Init Marquee
-        Init Console
-
-        loop while running:
-            if kbhit: getch the char
-            intermediate step:
-                process the key; ensure valid (A-Za-z0-9 and delete and enter keys)
-                keep track of what has been cumulatively typed
-            if enter:
-                send to command interpreter;
-            if kbhit:
-                update console component
-            if marquee visible: 
-                if update marquee component
-            Update screen for each component
-            Sleep
-    */
-
-    
-    
     return 0;
 }
