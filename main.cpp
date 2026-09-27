@@ -15,18 +15,30 @@ using std::endl;
 using std::cin;
 using std::string;
 
-void print_welcome() {
-    cout << endl << endl;
+void print_welcome(ConsoleScreen &console) {
+    console.print("   ____  ____  _____________  ____  _____  ____    ___  __________  ____ ");
+    console.print("  / __ \\/ __ \\/ ____/ ___/\\ \\/ /  |/  / / / / /   /   |/_  __/ __ \\/ __ \\");
+    console.print(" / / / / /_/ / __/  \\__ \\  \\  / /|_/ / / / / /   / /| | / / / / / / /_/ /");
+    console.print("/ /_/ / ____/ /___ ___/ /  / / /  / / /_/ / /___/ ___ |/ / / /_/ / _, _/ ");
+    console.print("\\____/_/   /_____//____/  /_/_/  /_/\\____/_____/_/  |_/_/  \\____/_/ |_| ");
+    console.print("");
+    console.print("Welcome");
+    console.print("CSOPESY Emulator");
+    console.print("Agsalon - Ercia - Garcia - Ortha");
+    console.print("");
 
-    cout << "   ____  ____  _____________  ____  _____  ____    ___  __________  ____ \n"
-        << "  / __ \\/ __ \\/ ____/ ___/\\ \\/ /  |/  / / / / /   /   |/_  __/ __ \\/ __ \\\n"
-        << " / / / / /_/ / __/  \\__ \\  \\  / /|_/ / / / / /   / /| | / / / / / / /_/ /\n"
-        << "/ /_/ / ____/ /___ ___/ /  / / /  / / /_/ / /___/ ___ |/ / / /_/ / _, _/ \n"
-        << "\\____/_/   /_____//____/  /_/_/  /_/\\____/_____/_/  |_/_/  \\____/_/ |_|  \n" << endl;
 
-    cout << endl << "Welcome" << endl << "CSOPESY Emulator" << endl;
-    cout << "Agsalon - Ercia - Garcia - Ortha" << endl;
-    cout << endl;
+    // cout << endl << endl;
+
+    // cout << "   ____  ____  _____________  ____  _____  ____    ___  __________  ____ \n"
+    //     << "  / __ \\/ __ \\/ ____/ ___/\\ \\/ /  |/  / / / / /   /   |/_  __/ __ \\/ __ \\\n"
+    //     << " / / / / /_/ / __/  \\__ \\  \\  / /|_/ / / / / /   / /| | / / / / / / /_/ /\n"
+    //     << "/ /_/ / ____/ /___ ___/ /  / / /  / / /_/ / /___/ ___ |/ / / /_/ / _, _/ \n"
+    //     << "\\____/_/   /_____//____/  /_/_/  /_/\\____/_____/_/  |_/_/  \\____/_/ |_|  \n" << endl;
+
+    // cout << endl << "Welcome" << endl << "CSOPESY Emulator" << endl;
+    // cout << "Agsalon - Ercia - Garcia - Ortha" << endl;
+    // cout << endl;
 }
 
 // Splits "set_speed 200" into {"set_speed", "200"}. args_ is left empty
@@ -117,27 +129,21 @@ void clearScreen() {
 
 
 int main (int argc, char *argv[]) {
-    print_welcome();
-
     int refreshRate = 60;
     int screenWidth = 100;
     int screenHeight = 25;
 
     bool running = true;
 
-    // Reserve the top part of the screen for the marquee and the bottom
-    // few rows for the console, so the two components never overlap.
-    int consoleHeight = 8;
-    int marqueeHeight = screenHeight - consoleHeight;
-
     Screen MainScreen = Screen(screenWidth, screenHeight);
 
-    MarqueeText MarqueeTextComponent = MarqueeText(0, 0, screenWidth, marqueeHeight);
+    MarqueeText MarqueeTextComponent = MarqueeText(0, 0, screenWidth, screenHeight);
     MarqueeTextComponent.setMarqueeText("Hello World");
     MarqueeTextComponent.start();
 
-    ConsoleScreen Console(marqueeHeight, 0, screenWidth, consoleHeight, "Command> ");
-    Console.print("Welcome to CSOPESY!");
+    ConsoleScreen Console(0, 0, screenWidth, screenHeight, "Command> ");
+    // Console.print("Welcome to CSOPESY!");
+    print_welcome(Console);
     Console.print("Type 'help' to see the available commands.");
 
     // The console only knows how to display text; cmd_dispatch is what
@@ -176,8 +182,8 @@ int main (int argc, char *argv[]) {
         if (MarqueeTextComponent.isRunning())
             MarqueeTextComponent.update();
 
-        MainScreen.update(MarqueeTextComponent);
         MainScreen.update(Console);
+
         MainScreen.draw();
         MainScreen.clearBuffer();
 
