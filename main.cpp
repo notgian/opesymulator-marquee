@@ -61,7 +61,7 @@ CommandStatus cmd_dispatch(const string& command) {
             return CommandStatus::Success;
         }},
         {"clear", []() { 
-            cout << "\033[2J";
+            cout << "\033[2J\033[3J\033[H";
             print_welcome();
             return CommandStatus::Success; 
         }},
