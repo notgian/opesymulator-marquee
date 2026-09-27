@@ -81,10 +81,12 @@ CommandStatus cmd_dispatch(const string& command) {
 }
 
 
+
 int main (int argc, char *argv[]) {
     print_welcome();
 
     bool running = true;
+    int refreshRate = 60;
     string cmdText = "Command";
 
     while (running) {
@@ -109,6 +111,23 @@ int main (int argc, char *argv[]) {
                 break;
         }
 
+
+        // NOTES on restructured pseudocode for main func:
+        //
+        //  Init Screen
+        //  Init Marquee
+        //  Init Console
+        //
+        // loop while running:
+        //  if kbhit: getch the char
+        //  intermediate step:
+        //  - process the key; ensure valid (A-Za-z0-9 and delete and enter keys)
+        //  - keep track of what has been cumulatively typed
+        //  if enter:
+        //  - send to command interpreter;
+        //  if kbhit: update console component
+        //  if marquee visible: if update marquee component
+        //  Update screen for each component
     }
     
     return 0;

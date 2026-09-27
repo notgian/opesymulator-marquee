@@ -1,6 +1,5 @@
 #include "Screen.h"
 #include <iostream>
-#include <algorithm>
 
 Screen::Screen(int width, int height) 
     : width_(width), height_(height) {
@@ -41,4 +40,15 @@ void Screen::update(const Component& component) {
             screenBuffer_[screenY][screenX] = line[c];
         }
     }
+}
+
+// Does not update the buffer; Only draws to stdout
+void Screen::draw() const {
+    std::cout << "\033[H";
+
+    for (const auto& row: screenBuffer_) {
+        std::cout << row << "\n";
+    }
+
+    std::cout.flush();
 }
