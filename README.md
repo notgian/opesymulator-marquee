@@ -7,6 +7,9 @@ Group Members:
 - MARC JARED SEAN ERCIA
 - THEON SCHUYLER GARCIA
 
+Entry class file:
+main.cpp
+
 ## Building and Running
 Just click the run button in VSCODE.
 
