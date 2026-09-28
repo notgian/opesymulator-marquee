@@ -1,11 +1,18 @@
-# CSOPESYMULATOR
-An OS Emulator made for CSOPESY
+# CSOPESYMULATOR: Marquee Text Console
+An OS Marquee Text Console made for CSOPESY
 
-## Manual Build
-Manual building and running with g++
+Group Members:
+- GIAN LORENZO ORTHA
+- GIANELA KIM AGSALON
+- MARC JARED SEAN ERCIA
+- THEON SCHUYLER GARCIA
 
-*NOTE: will update for Windows soon!!*
+## Building and Running
+Just click the run button in VSCODE.
 
-```bash
-g++ main.cpp -o main.out && ./main.out  
+OR Manual building and running with g++
+
+```cmd
+.\build.bat
+.\main.exe
 ```
